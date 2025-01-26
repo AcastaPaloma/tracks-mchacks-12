@@ -360,6 +360,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_web_socket:
+    dependency: "direct main"
+    description:
+      name: flutter_web_socket
+      sha256: "17bf6fe6dc6b6ef7540a19f538198a9503edf6287e61455b0884707b2cc14652"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5"
   freezed_annotation:
     dependency: transitive
     description:

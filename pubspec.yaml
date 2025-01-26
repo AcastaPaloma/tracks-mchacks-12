@@ -44,6 +44,7 @@ dependencies:
   gal: ^2.3.1
   image: ^4.5.2
   convert_native_img_stream: ^0.0.1
+  flutter_web_socket: ^1.0.5
 
 dev_dependencies:
   flutter_test:
