@@ -1,8 +1,18 @@
 import cv2
 import mediapipe as mp
 import time
+import spotipy
 from collections import defaultdict
-import math
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+SPOTIPY_CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
+SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
+SPOTIPY_REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI")
+
+print(SPOTIPY_CLIENT_ID)
 
 FACE_WIDTH = 12
 try:
@@ -54,9 +64,9 @@ class HandChronometer:
 
         self.mp_drawing = mp.solutions.drawing_utils
         self.hands = self.mp_hands.Hands(
-            static_image_mode=False, 
-            max_num_hands=2, 
-            min_detection_confidence=0.7, 
+            static_image_mode=False,
+            max_num_hands=2,
+            min_detection_confidence=0.7,
             min_tracking_confidence=0.7
         )
         self.last_action_time = 0
@@ -65,7 +75,7 @@ class HandChronometer:
         self.this_exercise_index = 0
         self.start_frame = 0
         self.stop_frame = 0
-        
+
         self.extrema_tracking = {
             'active': False,
             'elapsed_time': 0,
@@ -73,13 +83,13 @@ class HandChronometer:
             'min_y': float('inf')
         }
         self.chronometer = Chronometer(self)
-        
+
         #mid-set related variables
         self.bpm_ranges = []
         self.normalAction = False
         self.prev_max_time = 0
-        
-        
+
+
 
     def split_into_ranges(self, n):
         step = math.ceil(n / 5)
@@ -113,7 +123,7 @@ class HandChronometer:
         FRAME_BUFFER = 20
 
         if finger_count == 2:  # Two fingers up
-            #if set not started 
+            #if set not started
             if not self.extrema_tracking['active'] and current_frame >= self.stop_frame + FRAME_BUFFER:
                 print("Two fingers detected. Activating.")
                 self.chronometer.start()
@@ -140,7 +150,7 @@ class HandChronometer:
             self.last_action_time = current_time
 
     def run(self):
-        cap = cv2.VideoCapture(1)
+        cap = cv2.VideoCapture(0) # cv2.VideoCapture(1)
         original_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         original_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         aspect_ratio = original_width / original_height
@@ -154,7 +164,7 @@ class HandChronometer:
             ret, frame = cap.read()
             if not ret:
                 break
-            
+
             this_exercise = self.exercise_list[self.this_exercise_index]
 
             frame = cv2.flip(frame, 1)
@@ -168,11 +178,11 @@ class HandChronometer:
             pose_landmarks = pose_result.pose_landmarks
 
             time_text = f"Time: {self.chronometer.time:.2f} sec"
-            cv2.putText(frame, time_text, (10, 50), 
+            cv2.putText(frame, time_text, (10, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
             exercise_text = f"Exercise: {self.exercise_list[self.this_exercise_index]}"
-            cv2.putText(frame, exercise_text, (10, 100), 
+            cv2.putText(frame, exercise_text, (10, 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
             if pose_landmarks and self.extrema_tracking['active']:
@@ -196,19 +206,19 @@ class HandChronometer:
 
                     right_y = right_wrist.y * new_height * propConstant
                     left_y = left_wrist.y * new_height * propConstant
-                
+
                 avg_y = (right_y + left_y) / 2
                 self.extrema_tracking['max_y'] = max(self.extrema_tracking['max_y'], avg_y)
                 self.extrema_tracking['min_y'] = min(self.extrema_tracking['min_y'], avg_y)
-                
-                
+
+
                 if current_time - self.chronometer.start_time > 4:
                     localMax, localMin = self.extrema_tracking["max_y"], self.extrema_tracking["min_y"]
                     print(localMax)
-                    
+
                     if not self.bpm_ranges:
                         bpm_ranges = self.split_into_ranges(localMax)
-                    
+
                     diff = 1/propConstant
                     if localMax - diff <= avg_y <= localMax + diff and current_time - self.prev_max_time > 0.7:
                         bpm = 1 / ((current_time - self.prev_max_time)/60)
@@ -224,19 +234,19 @@ class HandChronometer:
                 right_ear_x, right_ear_y = right_ear.x * new_width, right_ear.y * new_height
                 left_ear_x, left_ear_y = left_ear.x * new_width, left_ear.y * new_height
                 propConstant = FACE_WIDTH / (((right_ear_y - left_ear_y) ** 2 + (right_ear_x - left_ear_x) ** 2) ** 0.5)
-                
+
                 left_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP.value]
                 right_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_HIP.value]
-                
+
                 left_shoulder = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_SHOULDER.value]
                 right_shoulder = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_SHOULDER.value]
-                
-                avg_threshold_y = ((left_hip.y + left_shoulder.y)/2 + (right_hip.y + right_shoulder.y)/2)/2 * new_height * propConstant 
+
+                avg_threshold_y = ((left_hip.y + left_shoulder.y)/2 + (right_hip.y + right_shoulder.y)/2)/2 * new_height * propConstant
                 for hand_landmarks, hand_handedness in zip(hand_result.multi_hand_landmarks, hand_result.multi_handedness):
                     wrist_y = hand_landmarks.landmark[0].y * new_height * propConstant
                     if avg_threshold_y < wrist_y:
                         continue
-                    
+
                     handedness_label = hand_handedness.classification[0].label
                     finger_count = self.fingers_up(hand_landmarks, handedness_label)
 
