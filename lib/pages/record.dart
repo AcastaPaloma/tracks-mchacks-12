@@ -83,9 +83,10 @@ class _RecordPageState extends ConsumerState<RecordPage> with WidgetsBindingObse
       cameraController?.initialize().then((_) {
         cameraController?.setFlashMode(FlashMode.off);
         // _startVideoStream();
+        setState(() {});
 
 
-        // return;
+        return;
         cameraController?.startImageStream((CameraImage availableImage) async {
           // print("hi world");
           // print(availableImage);
@@ -120,7 +121,7 @@ class _RecordPageState extends ConsumerState<RecordPage> with WidgetsBindingObse
           //   print("bitmap is null");
           // }
         });
-        setState(() {});
+
       });
     }
   }
@@ -171,33 +172,49 @@ class _RecordPageState extends ConsumerState<RecordPage> with WidgetsBindingObse
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text("Erm")
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white,),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: const Text("Tracking", style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.black,
       ),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            // CameraPreview(cameraController!),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 60),
-                color: Colors.white,
-                width: 350,
-                height: 100,
-                child: ElevatedButton(
-                  child: Text("Take pic"),
-                  onPressed: () async {
-                    print("erm");
-                    XFile picture = await cameraController!.takePicture();
-                    Gal.putImage(
-                      picture.path
-                    );
-                  },
-                )
+            Padding(
+              padding: const EdgeInsets.only(left: 20, right: 20, top: 50, bottom: 50),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: CameraPreview(cameraController!),
+              ),
+            ),
+            SizedBox(
+              height: 70,
+              child: Row(
+                children: [
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text("Bicep Curl", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Text("Current Exercise", style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white))
+                    ],
+                  )),
+                  Container(color: Colors.white, width: 2),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text("120", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Text("Pace", style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white))
+                    ],
+                  ))
+                ],
               )
             )
-          ],
-        )
+          ]
+        ),
       )
     );
   }
