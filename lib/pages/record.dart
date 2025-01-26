@@ -192,7 +192,7 @@ class _RecordPageState extends ConsumerState<RecordPage> with WidgetsBindingObse
             // ElevatedButton(
             //   child: Text("erm"),
             //   onPressed: () {
-            //     videoChannel.sink.add("Kuan is gay");
+            //     videoChannel.sink.add("Hello world");
             //   }
             // )
             // SizedBox(
