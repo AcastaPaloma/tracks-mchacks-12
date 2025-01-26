@@ -4,15 +4,72 @@ import time
 import spotipy
 from collections import defaultdict
 from dotenv import load_dotenv
+import random
 import os
 
 load_dotenv()
 
+'''
+======================================
+            DEFINITIONS
+======================================
+'''
+
+# Spotify Utils
 SPOTIPY_CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
 SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
 SPOTIPY_REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI")
 
-print(SPOTIPY_CLIENT_ID)
+scopes = ["user-read-playback-state", "user-modify-playback-state", "user-read-private"]
+sp = spotipy.Spotify(auth_manager=spotipy.oauth2.SpotifyOAuth(client_id=SPOTIPY_CLIENT_ID,
+                                                              client_secret=SPOTIPY_CLIENT_SECRET,
+                                                              redirect_uri=SPOTIPY_REDIRECT_URI,
+                                                              scope=scopes))
+def playSong(track_id):
+    device_id = "ade7e71686f3815586d3b61d34772cf14bebd8a4"
+    sp.add_to_queue(f"spotify:track:{track_id}", device_id)
+    sp.next_track(device_id)
+    sp.seek_track(random.randint(0, 30)*1000)
+
+def getSongId(track_name, artist):
+    searchResult = sp.search(f"track:{track_name} artist:{artist}", type="track")
+    # print(searchResult['tracks']['items'][0])
+    return searchResult['tracks']['items'][0]['id']
+
+# API Endpoint Processing
+def processValues(return_values):
+    songs_list = []
+    for value in return_values:
+        if (len(value) < 3):
+            continue
+        # print(value)
+        lower, chunk1 = value[2].split('-')
+        higher, useless = chunk1.split(' ')
+        lower = int(lower)
+        higher = int(higher)
+        avg_bpm = (lower + higher)//2
+
+        songs_list.append([avg_bpm, value[1], value[0]])
+    return sorted(songs_list, key=lambda x: x[0])
+
+def getClosestBPM(target_bpm):
+    closest_song = min(songs_list, key=lambda x: abs(x[0] - target_bpm))
+    return closest_song
+
+def playClosestBPM(target_bpm):
+    closest_song = getClosestBPM(target_bpm)
+    playSong(getSongId(closest_song[1], closest_song[2]))
+
+
+'''
+======================================
+          MAIN LOGIC START
+======================================
+'''
+
+
+# Global Variables 
+gloabl_songs_list = [] # Update Every Time you call processValues()
 
 FACE_WIDTH = 12
 try:
@@ -150,7 +207,7 @@ class HandChronometer:
             self.last_action_time = current_time
 
     def run(self):
-        cap = cv2.VideoCapture(0) # cv2.VideoCapture(1)
+        cap = cv2.VideoCapture(1)
         original_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         original_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         aspect_ratio = original_width / original_height

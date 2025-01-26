@@ -19,3 +19,25 @@ return_values = [
 ]
 
 
+def processValues(return_values):
+    songs_list = []
+    for value in return_values:
+        if (len(value) < 3):
+            continue
+        # print(value)
+        lower, chunk1 = value[2].split('-')
+        higher, useless = chunk1.split(' ')
+        lower = int(lower)
+        higher = int(higher)
+        avg_bpm = (lower + higher)//2
+
+        songs_list.append([avg_bpm, value[1], value[0]])
+    return sorted(songs_list, key=lambda x: x[0])
+
+def getClosestBPM(target_bpm):
+    closest_song = min(songs_list, key=lambda x: abs(x[0] - target_bpm))
+    return closest_song
+
+songs_list = processValues(return_values)
+
+print(getClosestBPM(115))
