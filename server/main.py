@@ -2,9 +2,9 @@ import cv2
 import mediapipe as mp
 import time
 from collections import defaultdict
+import math
 
 FACE_WIDTH = 12
-TEST_WINDOW_TIME = 2
 try:
     from screeninfo import get_monitors
     screen = get_monitors()[0]
@@ -65,7 +65,7 @@ class HandChronometer:
         self.this_exercise_index = 0
         self.start_frame = 0
         self.stop_frame = 0
-
+        
         self.extrema_tracking = {
             'active': False,
             'elapsed_time': 0,
@@ -73,6 +73,18 @@ class HandChronometer:
             'min_y': float('inf')
         }
         self.chronometer = Chronometer(self)
+        
+        #mid-set related variables
+        self.bpm_ranges = []
+        self.normalAction = False
+        self.prev_max_time = 0
+        
+        
+
+    def split_into_ranges(self, n):
+        step = math.ceil(n / 5)
+        return [(i * step + 1, min((i + 1) * step, n)) for i in range(5)]
+
 
     def fingers_up(self, hand_landmarks, handedness):
         tips = [4, 8, 12, 16, 20]
@@ -98,9 +110,10 @@ class HandChronometer:
         if current_time - self.last_action_time < self.action_cooldown:
             return
 
-        FRAME_BUFFER = 100
+        FRAME_BUFFER = 20
 
         if finger_count == 2:  # Two fingers up
+            #if set not started 
             if not self.extrema_tracking['active'] and current_frame >= self.stop_frame + FRAME_BUFFER:
                 print("Two fingers detected. Activating.")
                 self.chronometer.start()
@@ -108,6 +121,8 @@ class HandChronometer:
                 self.extrema_tracking['min_y'] = float('inf')
                 self.last_action_time = current_time
                 self.start_frame = current_frame
+                self.normalAction = False
+            #if set has already started
             elif self.chronometer.time >= 4 and current_frame >= self.start_frame + FRAME_BUFFER:
                 self.chronometer.stop()
                 print(f"Exercise {self.exercise_list[self.this_exercise_index]} Extrema:")
@@ -117,6 +132,9 @@ class HandChronometer:
                 self.extrema_tracking['min_y'] = float('inf')
                 self.last_action_time = current_time
         elif finger_count == 3:  # Three fingers up
+            self.bpm_ranges = []
+            self.normalAction = False
+            self.prev_max_time = 0
             self.chronometer.reset()
             self.this_exercise_index = (self.this_exercise_index + 1) % len(self.exercise_list)
             self.last_action_time = current_time
@@ -178,11 +196,26 @@ class HandChronometer:
 
                     right_y = right_wrist.y * new_height * propConstant
                     left_y = left_wrist.y * new_height * propConstant
-                    
-
+                
                 avg_y = (right_y + left_y) / 2
                 self.extrema_tracking['max_y'] = max(self.extrema_tracking['max_y'], avg_y)
                 self.extrema_tracking['min_y'] = min(self.extrema_tracking['min_y'], avg_y)
+                
+                
+                if current_time - self.chronometer.start_time > 4:
+                    localMax, localMin = self.extrema_tracking["max_y"], self.extrema_tracking["min_y"]
+                    print(localMax)
+                    
+                    if not self.bpm_ranges:
+                        bpm_ranges = self.split_into_ranges(localMax)
+                    
+                    diff = 1/propConstant
+                    if localMax - diff <= avg_y <= localMax + diff and current_time - self.prev_max_time > 0.7:
+                        bpm = 1 / ((current_time - self.prev_max_time)/60)
+                        print(str(bpm) + ' reps per minute')
+                        self.prev_max_time = current_time
+
+
 
             if hand_result.multi_hand_landmarks:
                 right_ear = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_EAR.value]
@@ -201,7 +234,6 @@ class HandChronometer:
                 avg_threshold_y = ((left_hip.y + left_shoulder.y)/2 + (right_hip.y + right_shoulder.y)/2)/2 * new_height * propConstant 
                 for hand_landmarks, hand_handedness in zip(hand_result.multi_hand_landmarks, hand_result.multi_handedness):
                     wrist_y = hand_landmarks.landmark[0].y * new_height * propConstant
-                    print(avg_threshold_y > wrist_y, avg_threshold_y, wrist_y)
                     if avg_threshold_y < wrist_y:
                         continue
                     
