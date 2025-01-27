@@ -1,16 +1,9 @@
-# tracks
+# Tracks
 
 A new Flutter project.
 
+Tracks tracks workout reps in real-time by using OpenCV and machine learning to monitor shoulder and wrist movements. It then adjusts the BPM of your music to match your workout intensity, seamlessly integrating with Spotify. The website automatically adjusts the music's tempo based on how fast or intense the user’s workout is, providing a more personalized and energetic experience. It’s free to use, and users can choose their music genre, while the app handles intensity adjustments.
+
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Coming soon!
